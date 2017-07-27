@@ -17,4 +17,17 @@
 
 package com.netflix.spinnaker.testing.scenarios
 
+import com.netflix.spinnaker.testing.api.TaskResult
 
+interface Scenario {
+    fun plan() : List<ScenarioActivity>
+}
+
+data class ScenarioActivity(val secondsOffset : Int,
+                            val job: Map<String, Any>,
+                            val scenarioName: String,
+                            val application: String,
+                            val description: String) {
+  var taskResult : TaskResult? = null
+  var taskId : String? = null
+}

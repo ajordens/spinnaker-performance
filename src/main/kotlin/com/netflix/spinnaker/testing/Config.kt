@@ -15,21 +15,41 @@
  */
 
 
-package com.netflix.spinnaker.testing.config
+package com.netflix.spinnaker.testing
 
-import com.squareup.okhttp.OkHttpClient
+import okhttp3.OkHttpClient
+import okhttp3.internal.platform.Platform
+import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.security.KeyStore
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 
+class Config {
+    var spinnakerClient: OkHttpClientConfiguration = OkHttpClientConfiguration()
+    var scenarios: List<ScenarioConfig> = emptyList()
+
+    fun init() {
+        spinnakerClient.init()
+    }
+}
+
+data class ScenarioConfig(val name: String,
+                          val cloudProvider: String?,
+                          val type: String,
+                          val config: Map<String, Any>,
+                          val executionConfig: ExecutionConfig?,
+                          val enabled: Boolean = true)
+
+data class ExecutionConfig(val total: Int,
+                           val perSecondRate: Double)
+
 data class OkHttpClientConfiguration(var uri: String = "",
                                      var skipHostnameVerification: Boolean = false,
                                      var keyStore: String = "",
                                      var keyStorePassword: String = "",
                                      var keyStorePasswordFile: String = "") {
-
     companion object {
         val logger = LoggerFactory.getLogger(OkHttpClient::class.java)
     }
@@ -37,13 +57,6 @@ data class OkHttpClientConfiguration(var uri: String = "",
     var okHttpClient = OkHttpClient()
 
     fun init() {
-        if (skipHostnameVerification) {
-            this.okHttpClient = okHttpClient.setHostnameVerifier({ hostname, _ ->
-                logger.warn("Skipping hostname verification on request to $hostname")
-                true
-            })
-        }
-
         if (!keyStore.isNullOrEmpty()) {
             val keyStorePassword = if (!keyStorePassword.isNullOrEmpty()) {
                 keyStorePassword
@@ -66,7 +79,15 @@ data class OkHttpClientConfiguration(var uri: String = "",
             val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(keyManagers, null, null);
 
-            this.okHttpClient = okHttpClient.setSslSocketFactory(sslContext.socketFactory)
+            val loggingInterceptor = HttpLoggingInterceptor()
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC)
+
+            this.okHttpClient = OkHttpClient.Builder()
+                    .addInterceptor(loggingInterceptor)
+                    .sslSocketFactory(
+                            sslContext.socketFactory,
+                            Platform.get().trustManager(sslContext.socketFactory))
+                    .build()
         }
     }
 }

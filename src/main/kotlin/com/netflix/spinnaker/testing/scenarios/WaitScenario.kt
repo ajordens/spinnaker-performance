@@ -14,7 +14,38 @@
  * limitations under the License.
  */
 
-
 package com.netflix.spinnaker.testing.scenarios
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.testing.api.SpinnakerClient
+import com.netflix.spinnaker.testing.ExecutionConfig
+import com.netflix.spinnaker.testing.ScenarioConfig
+import java.util.*
 
+class WaitScenario(val objectMapper: ObjectMapper,
+                   val spinnakerClient: SpinnakerClient,
+                   val scenarioConfig: ScenarioConfig) : Scenario {
+  private val waitConfig = objectMapper.convertValue(scenarioConfig.config, WaitConfig::class.java)
+  private val executionConfig = objectMapper.convertValue(scenarioConfig.executionConfig, ExecutionConfig::class.java)
+
+  val scenarioId = UUID.randomUUID().toString()
+
+  override fun plan(): List<ScenarioActivity> {
+    return (1..executionConfig.total).map {
+      ScenarioActivity(
+        it,
+        mutableMapOf<String, Any>(
+          Pair("type", "wait"),
+          Pair("waitTime", waitConfig.waitTimeSeconds),
+          Pair("scenarioId", scenarioId),
+          Pair("tickId", it)
+        ),
+        scenarioConfig.name,
+        waitConfig.application,
+        "Wait ${waitConfig.waitTimeSeconds} (id: ${scenarioId.substring(scenarioId.length - 6)}, tick: ${it})"
+      )
+    }
+  }
+}
+
+private data class WaitConfig(val waitTimeSeconds: Int, val application: String)
