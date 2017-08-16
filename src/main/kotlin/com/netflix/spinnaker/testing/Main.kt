@@ -23,9 +23,9 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.testing.api.SpinnakerClient
 import com.netflix.spinnaker.testing.scenarios.Scenario
 import com.netflix.spinnaker.testing.scenarios.ScenarioRunner
-import java.io.File
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
+import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
   val config = yamlObjectMapper.readValue(
-    File("/Users/ajordens/.spinnaker/spinnaker-performance.yml"),
+    File("${System.getProperty("user.home")}/.spinnaker/spinnaker-performance.yml"),
     Config::class.java
   )
   config.init()

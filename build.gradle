@@ -59,6 +59,6 @@ dependencies {
 }
 
 task perf(type: JavaExec) {
-  main = 'com.netflix.spinnaker.testing.RunnerKt'
+  main = 'com.netflix.spinnaker.testing.MainKt'
   classpath = sourceSets.main.runtimeClasspath
 }
