@@ -43,7 +43,8 @@ class DestroyAllServerGroupsScenario(val objectMapper: ObjectMapper,
           Pair("credentials", it.account),
           Pair("region", it.region),
           Pair("scenarioId", scenarioId),
-          Pair("tickId", counter.get())
+          Pair("tickId", counter.get()),
+          Pair("cloudProvider", "aws")
         ),
         scenarioConfig.name,
         config.application,
