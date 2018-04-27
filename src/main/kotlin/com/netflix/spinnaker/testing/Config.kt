@@ -39,15 +39,16 @@ data class ScenarioConfig(val name: String,
                           val cloudProvider: String?,
                           val type: String,
                           val config: Map<String, Any>,
-                          val executionConfig: ExecutionConfig?,
+                          val executionConfig: ExecutionConfig = ExecutionConfig(),
                           val enabled: Boolean = true)
 
-data class ExecutionConfig(val total: Int,
-                           val perSecondRate: Double)
+data class ExecutionConfig(val total: Int = 100,
+                           val perSecondRate: Double = 1.0)
 
 data class OkHttpClientConfiguration(var uri: String = "",
                                      var skipHostnameVerification: Boolean = false,
                                      var keyStore: String = "",
+                                     var keyStoreType: String = "PKCS12",
                                      var keyStorePassword: String = "",
                                      var keyStorePasswordFile: String = "") {
     companion object {
@@ -66,14 +67,14 @@ data class OkHttpClientConfiguration(var uri: String = "",
                 throw IllegalStateException("No `keystorePassword` or `keyStorePasswordFile` specified")
             }
 
-            val jksKeyStore = KeyStore.getInstance("JKS")
+            val keystoreRef = KeyStore.getInstance(keyStoreType)
 
             File(this.keyStore).inputStream().use {
-                jksKeyStore.load(it, keyStorePassword.toCharArray())
+                keystoreRef.load(it, keyStorePassword.toCharArray())
             }
 
             val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
-            kmf.init(jksKeyStore, keyStorePassword.toCharArray());
+            kmf.init(keystoreRef, keyStorePassword.toCharArray());
 
             val keyManagers = kmf.keyManagers
             val sslContext = SSLContext.getInstance("TLS")
