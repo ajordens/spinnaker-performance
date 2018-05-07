@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,66 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.testing.harness
 
-package com.netflix.spinnaker.testing.scenarios
-
-import com.netflix.spinnaker.testing.api.SpinnakerClient
-import com.netflix.spinnaker.testing.api.Task
+import com.netflix.spinnaker.testing.scenarios.ScenarioActivity
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartUtilities
 import org.jfree.data.category.DefaultCategoryDataset
 import java.io.File
 
-class ScenarioRunner(val spinnakerClient: SpinnakerClient, val scenarios: List<Scenario>) {
-  val allActivities = mutableMapOf<Int, List<ScenarioActivity>>().withDefault { mutableListOf() }
+interface ReportGenerator {
+  fun generate(activities: List<ScenarioActivity>)
+}
 
-  init {
-    plan()
+class ConsoleReportGenerator : ReportGenerator {
+
+  override fun generate(activities: List<ScenarioActivity>) {
+    throw UnsupportedOperationException("not implemented")
   }
+}
 
-  fun plan() {
-    allActivities.putAll(
-      scenarios.flatMap { it.plan() }.groupBy { it.secondsOffset }
-    )
-    println(allActivities)
-  }
+class ChartReportGenerator : ReportGenerator {
 
-  fun tick(secondsOffset: Int) : Boolean {
-    for (activity in allActivities.getValue(secondsOffset)) {
-      val response = spinnakerClient.submitTask(
-        Task(
-          arrayListOf(activity.job),
-          activity.application,
-          activity.description
-        )
-      ).execute()
-
-      activity.taskId = response.body()?.ref?.replace("/tasks/", "")
-    }
-
-    val maxSecondsOffset = allActivities.keys.max() ?: 0
-    return secondsOffset > maxSecondsOffset
-  }
-
-  fun fetchResults(): Boolean {
-    val activitiesMissingResults = allActivities.values.flatten().filter { it.taskResult == null }
-
-    activitiesMissingResults.forEach {
-      val taskResult = spinnakerClient.getTask(it.taskId!!).execute().body()
-      if (taskResult != null && taskResult.status != "RUNNING") {
-        it.taskResult = taskResult
-      }
-    }
-
-    return activitiesMissingResults.filter { it.taskResult == null }.isEmpty()
-  }
-
-  fun generateReport() {
+  override fun generate(activities: List<ScenarioActivity>) {
     val reportDirectory = File("results", "${System.currentTimeMillis()}")
     reportDirectory.mkdirs()
 
     val durationDataset = DefaultCategoryDataset()
-    for (activity in allActivities.values.flatten()) {
+    for (activity in activities) {
       try {
         durationDataset.addValue(
           activity.taskResult!!.getDuration(),
@@ -91,7 +58,7 @@ class ScenarioRunner(val spinnakerClient: SpinnakerClient, val scenarios: List<S
     ChartUtilities.saveChartAsPNG(File(reportDirectory, "scenarios_duration.png"), durationChart, 1440, 900);
 
     val lagDataset = DefaultCategoryDataset()
-    for (activity in allActivities.values.flatten()) {
+    for (activity in activities) {
       lagDataset.addValue(
         activity.taskResult!!.getLag() * 1000,
         activity.scenarioName,
@@ -104,6 +71,6 @@ class ScenarioRunner(val spinnakerClient: SpinnakerClient, val scenarios: List<S
 
     ChartUtilities.saveChartAsPNG(File(reportDirectory, "scenarios_lag.png"), lagChart, 1440, 900);
 
-    println("Reports written to ${reportDirectory}")
+    println("Reports written to $reportDirectory")
   }
 }
