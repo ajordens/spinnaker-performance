@@ -23,6 +23,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.security.KeyStore
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 
@@ -85,6 +86,7 @@ data class OkHttpClientConfiguration(var uri: String = "",
 
             this.okHttpClient = OkHttpClient.Builder()
                     .addInterceptor(loggingInterceptor)
+                    .readTimeout(60, TimeUnit.SECONDS)
                     .sslSocketFactory(
                             sslContext.socketFactory,
                             Platform.get().trustManager(sslContext.socketFactory))

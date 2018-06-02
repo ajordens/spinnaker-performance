@@ -40,7 +40,11 @@ interface SpinnakerClient {
   fun getTask(@Path("taskId") taskId: String): Call<TaskResult>
 }
 
-data class ServerGroup(val name: String, val account: String, val region: String, val cloudProvider: String)
+data class ServerGroup(val name: String,
+                       val account: String,
+                       val region: String,
+                       val cloudProvider: String,
+                       val createdTime: Long)
 
 data class Task(val job: List<Map<String, Any>>, val application: String, val description: String)
 

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.testing.ScenarioConfig
 import com.netflix.spinnaker.testing.api.SpinnakerClient
 import java.util.*
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 class DestroyAllServerGroupsScenario(val objectMapper: ObjectMapper,
@@ -31,7 +32,15 @@ class DestroyAllServerGroupsScenario(val objectMapper: ObjectMapper,
 
   override fun plan(): List<ScenarioActivity> {
     val counter = AtomicInteger(0)
-    return (spinnakerClient.getServerGroupsForApplication(config.application).execute().body() ?: emptyList()).map {
+    var serverGroupsForApplication = spinnakerClient.getServerGroupsForApplication(config.application).execute().body() ?: emptyList()
+
+    if (config.olderThanDays > 0) {
+      val olderThanTimestamp = (System.currentTimeMillis() - TimeUnit.DAYS.toMillis(config.olderThanDays))
+      serverGroupsForApplication = serverGroupsForApplication
+        .filter { s -> s.createdTime < olderThanTimestamp }
+    }
+
+    return serverGroupsForApplication.map {
       counter.incrementAndGet()
 
       ScenarioActivity(
@@ -54,4 +63,4 @@ class DestroyAllServerGroupsScenario(val objectMapper: ObjectMapper,
   }
 }
 
-private data class DestroyAllServerGroupsConfig(val application: String)
+private data class DestroyAllServerGroupsConfig(val application: String, val olderThanDays: Long = 0)
