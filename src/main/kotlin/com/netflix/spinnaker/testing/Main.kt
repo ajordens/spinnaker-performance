@@ -21,13 +21,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.testing.api.SpinnakerClient
-import com.netflix.spinnaker.testing.scenarios.Scenario
-import com.netflix.spinnaker.testing.scenarios.ScenarioRunner
+import com.netflix.spinnaker.testing.harness.ContinuousScenarioRunner
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.io.File
-import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 
 fun main(args: Array<String>) {
   val yamlObjectMapper = ObjectMapper(YAMLFactory())
@@ -56,48 +53,11 @@ fun main(args: Array<String>) {
     throw IllegalStateException("Unable to reach ${config.spinnakerClient.uri}/health")
   }
 
-  val scenarios = config.scenarios.filter { it.enabled }.map {
-    val scenarioClass = "${it.cloudProvider ?: ""}.${it.type.capitalize()}Scenario"
-    val clazz = Class.forName("com.netflix.spinnaker.testing.scenarios.${scenarioClass}".replace("..", "."))
-    val constructor = clazz.getConstructor(
-      ObjectMapper::class.java, SpinnakerClient::class.java, ScenarioConfig::class.java
-    )
+  val scenarios = loadScenarios(yamlObjectMapper, spinnakerClient, config.scenarios)
+  val scenarioRunner = loadRunner(spinnakerClient, scenarios, config.scenarioRunner).also { it.plan() }
 
-    constructor.newInstance(yamlObjectMapper, spinnakerClient, it) as Scenario
-  }
-
-  val timer = Timer()
-  timer.scheduleAtFixedRate(TickTask(ScenarioRunner(spinnakerClient, scenarios), timer), 1000, 1000)
-}
-
-private class TickTask(val scenarioRunner: ScenarioRunner, val timer: Timer) : TimerTask() {
-  val count = AtomicInteger(1)
-
-  override fun run() {
-    if (scenarioRunner.tick(count.get())) {
-      println("All tasks kicked off, waiting for results ...")
-      cancel()
-      timer.scheduleAtFixedRate(FetchResultsTask(scenarioRunner, timer), 5000, 30000)
-    }
-
-    count.addAndGet(1)
-  }
-}
-
-private class FetchResultsTask(val scenarioRunner: ScenarioRunner, val timer: Timer) : TimerTask() {
-  override fun run() {
-    if (scenarioRunner.fetchResults()) {
-      println("All results fetched")
-
-      cancel()
-      timer.schedule(GenerateReportTask(scenarioRunner, timer), 10000)
-    }
-  }
-}
-
-private class GenerateReportTask(val scenarioRunner: ScenarioRunner, val timer: Timer) : TimerTask() {
-  override fun run() {
-    scenarioRunner.generateReport()
-    timer.cancel()
-  }
+  when (scenarioRunner) {
+    is ContinuousScenarioRunner -> ContinuousDriver()
+    else -> DefaultDriver()
+  }.drive(scenarioRunner)
 }

@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.testing.scenarios
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.testing.api.SpinnakerClient
 import com.netflix.spinnaker.testing.ExecutionConfig
 import com.netflix.spinnaker.testing.ScenarioConfig
+import com.netflix.spinnaker.testing.api.SpinnakerClient
 import java.util.*
 
 class WaitScenario(val objectMapper: ObjectMapper,

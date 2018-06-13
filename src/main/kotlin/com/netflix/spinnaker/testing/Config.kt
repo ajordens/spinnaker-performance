@@ -28,12 +28,13 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 
 class Config {
-    var spinnakerClient: OkHttpClientConfiguration = OkHttpClientConfiguration()
-    var scenarios: List<ScenarioConfig> = emptyList()
+  var spinnakerClient: OkHttpClientConfiguration = OkHttpClientConfiguration()
+  var scenarioRunner: String = "AtOnce"
+  var scenarios: List<ScenarioConfig> = emptyList()
 
-    fun init() {
-        spinnakerClient.init()
-    }
+  fun init() {
+    spinnakerClient.init()
+  }
 }
 
 data class ScenarioConfig(val name: String,
@@ -53,7 +54,7 @@ data class OkHttpClientConfiguration(var uri: String = "",
                                      var keyStorePassword: String = "",
                                      var keyStorePasswordFile: String = "") {
     companion object {
-        val logger = LoggerFactory.getLogger(OkHttpClient::class.java)
+      val logger = LoggerFactory.getLogger(OkHttpClient::class.java)
     }
 
     var okHttpClient = OkHttpClient()
