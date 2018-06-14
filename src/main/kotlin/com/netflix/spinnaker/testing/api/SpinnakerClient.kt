@@ -33,6 +33,9 @@ interface SpinnakerClient {
   @GET("/applications/{application}/serverGroups")
   fun getServerGroupsForApplication(@Path("application") application: String): Call<List<ServerGroup>>
 
+  @GET("/applications/{application}/serverGroupManagers")
+  fun getServerGroupManagersForApplication(@Path("application") application: String): Call<List<ServerGroupManager>>
+
   @GET("/applications/{application}/tasks")
   fun getTasksForApplication(@Path("application") application: String): Call<List<TaskResult>>
 
@@ -45,6 +48,11 @@ data class ServerGroup(val name: String,
                        val region: String,
                        val cloudProvider: String,
                        val createdTime: Long)
+
+data class ServerGroupManager(val name: String,
+                              val account: String,
+                              val region: String,
+                              val cloudProvider: String)
 
 data class Task(val job: List<Map<String, Any>>, val application: String, val description: String)
 
